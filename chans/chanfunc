@@ -1,0 +1,7 @@
+func chanfunc[T any](arg T) chan T {
+    out := make(chan T)
+    go func() {
+
+    }()
+    return out
+}
