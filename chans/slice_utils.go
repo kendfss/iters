@@ -1,5 +1,9 @@
 package chans
 
+import (
+	"github.com/kendfss/rules"
+)
+
 // sliceContains reports whether v is present in s.
 func sliceContains[E comparable](s []E, v E) bool {
 	return sliceIndex(s, v) >= 0
@@ -41,5 +45,17 @@ func sliceToChan[T any](slice []T) chan T {
 		}
 	}()
 
+	return out
+}
+
+func chars[char rules.Char](predicate func(rune) bool, generate func(int) []char, n int) []char {
+	out := make([]char, n)
+	for n > 0 {
+		c := generate(1)[0]
+		for ; !predicate(rune(c)); c = generate(1)[0] {
+		}
+		out[len(out)-n] = c
+		n--
+	}
 	return out
 }

@@ -1,58 +1,55 @@
 package chans
 
 import (
+	"context"
 	"fmt"
 	"sync"
 
-	"github.com/kendfss/but"
 	"github.com/kendfss/rules"
 )
 
-var DefaultCapacity = 0
+type (
+	Readable[T any] interface{ chan T | <-chan T }
+	Writable[T any] interface{ chan T | chan<- T }
+)
 
-// Make creates a buffered channel of given capacity
-// or an unbuffered channel if the capacity is negative
-func Make[T any, cap rules.OrderedNumber](args ...cap) chan T {
-	if c := ParseCap(args...); c > 0 {
-		return make(chan T, c)
-	}
+// New initializes an unbuffered channel
+func New[T any]() chan T {
 	return make(chan T)
-
 }
 
-// ParseCap helps you to anticipate the behaviour of
-// functions with a "args ...cap" parameter
-func ParseCap[cap rules.OrderedNumber](args ...cap) uint64 {
-	if len(args) > 0 {
-		return uint64(args[0])
-	}
-	return 0
+// Buffered initializes a buffered channel
+func Buffered[T any](cap int) chan T {
+	return make(chan T, cap)
 }
 
-func Inf[T any, cap rules.OrderedNumber](init func() T, args ...cap) chan T {
-	out := make(chan T, ParseCap(args...))
+// Inf produces an infinite channel of given capacity using init to create each element/
+// Inf handles channel closure
+func Inf[T any](init func() T, capacity int) <-chan T {
+	out := make(chan T, capacity)
 	if init == nil {
 		init = func() T { return *new(T) }
 	}
 	go func() {
 		defer close(out)
 		for {
-
+			out <- init()
 		}
 	}()
 	return out
 }
 
-// Process consumes a channel
-func Process[T any](c chan T) {
-	for range c {
+// Drain consumes a channel to depletion
+func Drain[T any](src chan T) {
+	for range src {
 	}
 }
 
-func Filter(ch chan bool) chan bool {
-	out := make(chan bool, DefaultCapacity)
+// Filter takes a boolean channel and skips all false values it receives
+func Filter(src chan bool) chan bool {
+	out := make(chan bool, cap(src))
 	go func() {
-		for b := range ch {
+		for b := range src {
 			if b {
 				out <- b
 			}
@@ -61,11 +58,12 @@ func Filter(ch chan bool) chan bool {
 	return out
 }
 
-func FilterPred[T any](pred func(T) bool, ch chan T) chan T {
-	out := make(chan T, DefaultCapacity)
+// FilterPred skips any channel receipts that fail to satisfy the given predicate
+func FilterPred[T any, channel Readable[T]](pred func(T) bool, src channel) chan T {
+	out := make(chan T, cap(src))
 	go func() {
 		defer close(out)
-		for e := range ch {
+		for e := range src {
 			if pred(e) {
 				out <- e
 			}
@@ -74,8 +72,96 @@ func FilterPred[T any](pred func(T) bool, ch chan T) chan T {
 	return out
 }
 
-// RW wraps a read-only channel with a read-write one
+// Next extracts one receipt from the channel
+func Next[T any](src <-chan T) T {
+	return <-src
+}
+
+// NextSafe extracts one receipt from the channel and informs whether it's closed
+func NextSafe[T any, chanT Readable[T]](src chanT) (T, bool) {
+	v, open := <-src
+	return v, open
+}
+
+// PopperDefault returns a popper that yields a default value once the channel is closed
+func PopperDefault[T any, chanT Readable[T]](src chanT, defaultVal T) func() T {
+	return func() T {
+		out, open := <-src
+		if !open {
+			return defaultVal
+		}
+		return out
+	}
+}
+
+// Popper functions return the next channel receipt that satisfies the given predicate.
+// If you don't know when the source channel is closed, use NextSafe instead; unless the zero value is known to not satisfy the predicate.
+func Popper[T any, channel Readable[T]](pred func(T) bool, src channel) func() T {
+	return func() T {
+		var (
+			out  T
+			done bool
+		)
+		for {
+			out, done = <-src
+			if done {
+				break
+			}
+			if !pred(out) {
+				continue
+			}
+			break
+		}
+		return out
+	}
+}
+
+// PopperSafe functions return the next channel receipt that satisfies the given predicate and tells the user when the channel is closed
+func PopperSafe[T any](fn func(T) bool, src chan T) func() (T, bool) {
+	return func() (T, bool) {
+		var (
+			out  T
+			open bool
+		)
+		for {
+			out, open = <-src
+			if !fn(out) {
+				continue
+			}
+			break
+		}
+		return out, open
+	}
+}
+
+// Context returns a channel that closes as soon as either the context is done or the source channel is closed.
+// It does not, otherwise, operate on the context object an cannot cancel it
+func Context[T any](ctx context.Context, src chan T) chan T {
+	out := make(chan T, cap(src))
+	go func() {
+		defer close(out)
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case v, open := <-src:
+				if !open {
+					return
+				}
+				out <- v
+			}
+		}
+	}()
+	return out
+}
+
+// Deprecated: use ReadWrite
 func RW[T any](c <-chan T) chan T {
+	return ReadWrite(c)
+}
+
+// ReadWrite wraps a read-only channel with a read-write one
+func ReadWrite[T any](c <-chan T) chan T {
 	out := make(chan T, cap(c))
 	go func() {
 		defer close(out)
@@ -86,45 +172,38 @@ func RW[T any](c <-chan T) chan T {
 	return out
 }
 
-// RO wraps a read-write channel with a read-only one
-func RO[T any](c chan T) <-chan T {
-	out := make(chan T, cap(c))
-	go func() {
-		defer close(out)
-		for x := range c {
-			out <- x
-		}
-	}()
-	return out
+// ReadOnly coerces a read-write channel's type to read-only
+func ReadOnly[T any](c chan T) <-chan T {
+	return c
 }
 
-func Count[T any](c chan T) (out uint64) {
+// WriteOnly coerces a read-write channel's type to write-only
+func WriteOnly[T any](c chan T) chan<- T {
+	return c
+}
+
+// Deprecated: use ReadOnly instead
+func RO[T any](c chan T) <-chan T { return ReadOnly(c) }
+
+// Deprecated: use WriteOnly instead
+func WO[T any](c chan T) chan<- T { return WriteOnly(c) }
+
+// Count returns the number of elements passed through the channel before it is closed (externally)
+func Count[T any, chanT Readable[T]](c chanT) (out uint64) {
 	for range c {
 		out++
 	}
 	return
 }
 
-// remove all duplicates from a channel
-func Compact[T comparable](ch chan T) chan T {
-	out := make(chan T, DefaultCapacity)
-	go func() {
-		marked := []T{}
-		pred := func(arg T) bool {
-			if sliceContains(marked, arg) {
-				return true
-			}
-			marked = append(marked, arg)
-			return false
-		}
-		out = FilterPred(pred, ch)
-	}()
-	return out
+// Compact removes all duplicates from a channel in constant time
+func Compact[T comparable, chanT Readable[T]](src chanT) <-chan T {
+	return CompactHash(selfHash[T], src)
 }
 
-// remove all duplicates from a channel of a non-comparable type
-func CompactFunc[T comparable](eq func(T, T) bool, ch chan T) chan T {
-	out := make(chan T, DefaultCapacity)
+// CompactFunc removes all duplicates from a channel in linear time
+func CompactFunc[T comparable, chanT Readable[T]](eq func(T, T) bool, src chanT) <-chan T {
+	out := make(chan T, cap(src))
 	go func() {
 		marked := []T{}
 		pred := func(arg T) bool {
@@ -134,91 +213,148 @@ func CompactFunc[T comparable](eq func(T, T) bool, ch chan T) chan T {
 			marked = append(marked, arg)
 			return false
 		}
-		out = FilterPred(pred, ch)
+		out = FilterPred(pred, src)
 	}()
 	return out
 }
 
-// Send calls a function on every value of a slice
-func Do[T any](f func(T), ch <-chan T) {
+// CompactHash removes all duplicates from a channel in constant time
+func CompactHash[T any, H comparable, chanT Readable[T]](hash func(T) H, src chanT) <-chan T {
+	out := make(chan T, cap(src))
 	go func() {
-		for e := range ch {
+		marked := map[H]struct{}{}
+		pred := func(arg T) bool {
+			sum := hash(arg)
+			_, found := marked[sum]
+			if found {
+				return true
+			}
+			marked[sum] = struct{}{}
+			return false
+		}
+		out = FilterPred(pred, src)
+	}()
+	return out
+}
+
+// Deprecated: use Do instead
+func Send[T any, chanT Readable[T]](f func(T), src chanT) {
+	Do(f, src)
+}
+
+// Do calls a function on every value of a slice
+func Do[T any, chanT Readable[T]](f func(T), src chanT) {
+	go func() {
+		for e := range src {
 			f(e)
 		}
 	}()
 }
 
+// Map calls Cast
+func Map[I, O any, chanI Readable[I]](f func(I) O, src chanI) <-chan O {
+	return Cast(f, src)
+}
+
 // Cast calls a pure function on every value of a channel and returns a channel
 // containing all the results
-func Cast[I, O any](f func(I) O, ch <-chan I) chan O {
-	out := make(chan O, DefaultCapacity)
+func Cast[I, O any, chanI Readable[I]](f func(I) O, src chanI) chan O {
+	dst := make(chan O, cap(src))
 	go func() {
-		for e := range ch {
-			out <- f(e)
+		for e := range src {
+			dst <- f(e)
 		}
 	}()
-	return out
+	return dst
 }
 
-func StepStr[T rules.Char](arg string) chan T {
-	out := make(chan T)
+// Chain collects several channels and returns one populated by their content.
+// Chain expects the user to control closure of argument channels.
+// Chain handles closure of returned channel.
+// Returned channel has capacity equal to that of the argument with highest capacity
+func Chain[T any, chanT Readable[T]](args ...chanT) <-chan T {
+	capacity := 0
+	for _, arg := range args {
+		capacity = max(cap(arg), capacity)
+	}
+	out := make(chan T, capacity)
+	wg := new(sync.WaitGroup)
+	wg.Add(len(args))
 	go func() {
-		for _, char := range []rune(arg) {
-			out <- T(char)
-		}
-		close(out)
-	}()
-	return out
-}
-
-// Chain collects several channels and returns one populated by their content
-func Chain[T any](args ...chan T) <-chan T {
-	out := make(chan T)
-
-	go func() {
-		wg := new(sync.WaitGroup)
-		for _, c := range args {
-			wg.Add(1)
-			go func(c chan T) {
+		defer close(out)
+		for _, channel := range args {
+			go func(c chanT) {
 				defer wg.Done()
 				for e := range c {
 					out <- e
 				}
-			}(c)
+			}(channel)
 		}
 		wg.Wait()
-		close(out)
 	}()
 	return out
 }
 
-// Extend the first argument with the contents of the successors
+// ChainCap creates a new channel, with desired capacity, that serves as a frontent for the given arguments
+func ChainCap[T any, chanT Readable[T]](capacity int, args ...chanT) <-chan T {
+	out := make(chan T, capacity)
+	wg := sync.WaitGroup{}
+	wg.Add(len(args))
+	go func() {
+		defer close(out)
+		for _, arg := range args {
+			go func(arg <-chan T) {
+				defer wg.Done()
+				for e := range arg {
+					out <- e
+				}
+			}(arg)
+		}
+		wg.Wait()
+	}()
+	return out
+}
+
+// Extend the first argument with the contents of the successors.
 // non blocking, non order-preserving
-func Extend[T any](receiver chan T, args ...<-chan T) {
+func Extend[T any, readable Readable[T]](receiver chan T, args ...readable) {
 	wg := new(sync.WaitGroup)
+	wg.Add(len(args))
 	go func() {
 		for _, arg := range args {
 			go func(arg <-chan T) {
-				wg.Add(1)
+				defer wg.Done()
 				for e := range arg {
 					receiver <- e
 				}
-				wg.Done()
 			}(arg)
 		}
 		wg.Wait()
 	}()
 }
 
-func Extender[T any](target chan T) func(...<-chan T) {
-	return func(args ...<-chan T) {
+// Extender functions create extensions of the target channel.
+// See Extend for more information
+func Extender[T any, readable Readable[T]](target chan T) func(...readable) {
+	return func(args ...readable) {
 		Extend(target, args...)
 	}
 }
 
+// Castro casts multiple read-write channels to readonly
+func Castro[T any, chanT Readable[T]](buf []chanT) []<-chan T {
+	out := make([]<-chan T, len(buf))
+	for i, e := range buf {
+		out[i] = e
+	}
+	return out
+}
+
+// Lazify converts a slice into a readonly channel
 func Lazify[T any](arg []T) <-chan T {
 	out := make(chan T)
 	go func() {
+		defer close(out)
 		for _, e := range arg {
 			out <- e
 		}
@@ -227,11 +363,15 @@ func Lazify[T any](arg []T) <-chan T {
 }
 
 // Upto returns an iterator whose content depends on the number of arguments as follows
-// 		# of args 	|| 	behaviour
-//	 		 1	 	|| 	stop
-//		 	 2	 	|| 	start, stop
-//		 	 3	 	|| 	start, stop, step
-//         else 	|| 	error
+//
+//			# of args 	|| 	behaviour
+//		 		 1	 	|| 	stop
+//			 	 2	 	|| 	start, stop
+//			 	 3	 	|| 	start, stop, step
+//	           else 	|| 	error
+//
+// step defaults to 1
+// start defaults to 0
 func Upto[T rules.Real](args ...T) (chan T, error) {
 	switch len(args) {
 	case 1:
@@ -258,66 +398,158 @@ func Upto[T rules.Real](args ...T) (chan T, error) {
 // MustUpto returns an iterator whose behaviour is equivalent to that of Range
 func MustUpto[T rules.Real](args ...T) chan T {
 	out, err := Upto(args...)
-	if err == nil {
+	if err != nil {
+		panic(err)
+	}
+	return out
+}
+
+// Deprecated: use Push instead
+func Put[T any, int rules.Int, chanT Writable[T]](count int, dst chanT) {
+	Push(count, dst)
+}
+
+// Push writes "count" copies of zero-initialized "T" instances to "dst"
+func Push[T any, int rules.Int, chanT Writable[T]](count int, dst chanT) {
+	PushVal(count, dst, *new(T))
+}
+
+// PushVal writes a given value to a channel. Useful for spawning go routines before returning
+func PushVal[T any, int rules.Int, chanT Writable[T]](count int, dst chanT, val T) {
+	for ; count > 0; count-- {
+		dst <- val
+	}
+}
+
+// Deprecated: use Pusher instead
+func Putter[T any, chanT Writable[T]](dst chanT) func(T) error {
+	return Pusher(dst)
+}
+
+// Pusher returns a method of the given channel which sends it a given argument.
+// It returns a non nil error when the destination is closed
+func Pusher[T any, chanT Writable[T]](dst chanT) func(T) error {
+	closed := false
+	return func(arg T) error {
+		var out error
+		defer func() {
+			if err := recover(); err != nil {
+				out = fmt.Errorf("%s", err)
+				closed = true
+			}
+		}()
+		if closed {
+			return ErrWriteOnEmpty
+		}
+		dst <- arg
 		return out
 	}
-	panic(err)
 }
 
-// Put writes "count" copies of zero-initialized "T" instances to "ch"
-func Put[T any, int rules.Int](count int, ch chan T) {
+// Deprecated: use Pop instead
+func Get[T any, chanT Readable[T]](count int, src chanT) []T {
+	return Pop(count, src)
+}
+
+// Pop receives "count" items from "src"
+func Pop[T any, chanT Readable[T]](count int, src chanT) []T {
+	out := make([]T, count)
 	for ; count > 0; count-- {
-		ch <- *new(T)
+		out[len(out)-count] = <-src
+	}
+	return out
+}
+
+// Discard ignores "count" items from "src"
+func Discard[T any, int rules.Int, chanT Readable[T]](count int, src chanT) {
+	for ; count > 0; count-- {
+		<-src
 	}
 }
 
-// PutVal writes a given value to a channel. Useful for spawning go routines before returning
-func PutVal[T any](ch chan T, val T) {
-	ch <- val
-}
-
-// Get receives (discards) "count" items from "ch"
-func Get[T any, int rules.Int](count int, ch chan T) {
-	for ; count > 0; count-- {
-		<-ch
-	}
-}
-
-// Watch feeds dst with items received from src
-// does not close either of them
-func Watch[T any](dst, src chan T) {
+// Watch feeds dst with items received from src.
+// It does not close either of them
+func Watch[T any](dst chan T, src <-chan T) {
 	for e := range src {
 		dst <- e
 	}
 }
 
-// Putter returns a method of the given channel which sends it the given argument
-func Putter[T any](dst chan T) func(T) error {
-	return func(arg T) error {
-		var out error
-		defer func() {
-			if err := recover(); err != nil {
-				out = err.(error)
-			}
-		}()
-
-		dst <- arg
-
-		return out
-	}
-}
-
 // PredPutter returns a method of the given channel which sends it the given argument
-// if, and only if, the argument satisfies the given predicate
-// the put-method returns ErrUnsatisfied if the predicate is not satisfied
+// if, and only if, the argument satisfies the given predicate.
+// It returns a non-nil error when the destination is closed
 func PredPutter[T any](dst chan T, pred func(T) bool) func(T) error {
-	put := Putter(dst)
+	put := Pusher(dst)
 	return func(arg T) error {
 		if pred(arg) {
 			return put(arg)
 		}
-		return ErrUnsatisfied
+		return nil
 	}
 }
 
-var ErrUnsatisfied = but.New("Predicate was not satisfied")
+// Tee returns a pair of mutually independent copies of the source channel.
+// Blocks at each iterative step until both channels have been read from, use Teen to avoid this behaviour
+func Tee[T any](src <-chan T) (one, two chan T) {
+	one = make(chan T, cap(src))
+	two = make(chan T, cap(src))
+	go func() {
+		defer close(one)
+		defer close(two)
+		wg := new(sync.WaitGroup)
+		for e := range src {
+			wg.Add(2)
+			go func(t T) { defer wg.Done(); one <- e }(e)
+			go func(t T) { defer wg.Done(); two <- e }(e)
+			wg.Wait()
+		}
+	}()
+	return one, two
+}
+
+// // Teen returns n mutually indipendent copies of the source channel.
+// // Teen does not implement channel closure
+// func Teen[T any](src <-chan T, n int) []<-chan T {
+// 	out := make([]chan T, n)
+// 	w := waiter.New(n)
+// 	for i := range out {
+// 		out[i] = make(chan T, cap(src))
+// 	}
+// 	go func() {
+// 		for e := range src {
+// 			w.Add(1)
+// 			for i, ch := range out {
+// 				go func(i int, ch chan T, t T) { defer w.DoneAt(i); ch <- t }(i, ch, e)
+// 			}
+// 		}
+// 		w.Wait()
+// 	}()
+// 	return Castro(out)
+// }
+
+// Close closes a channel
+func Close[T any](ch chan T) { close(ch) }
+
+// Bytes yields each byte in s
+func Bytes(s string) <-chan byte {
+	out := make(chan byte)
+	go func() {
+		defer close(out)
+		for _, c := range []byte(s) {
+			out <- c
+		}
+	}()
+	return out
+}
+
+// Runes yields each rune in s
+func Runes(s string) <-chan rune {
+	out := make(chan rune)
+	go func() {
+		defer close(out)
+		for _, c := range s {
+			out <- c
+		}
+	}()
+	return out
+}

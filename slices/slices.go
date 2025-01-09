@@ -10,7 +10,7 @@ import (
 
 	"github.com/kendfss/but"
 	"github.com/kendfss/oprs"
-	"github.com/kendfss/oprs/math/real"
+	re "github.com/kendfss/oprs/math/real"
 	"github.com/kendfss/rules"
 )
 
@@ -1010,8 +1010,10 @@ func Copies[T any, U rules.I](length U, val T) []T {
 }
 
 // Channel returns
-// 		a buffered channel iff cap < 1
-// 		an unbuffered channel otherwise
+//
+//	a buffered channel iff cap < 1
+//	an unbuffered channel otherwise
+//
 // use an empty slice if you want to reproduce "make(chan T, 0)"
 func Channel[T any, Int rules.Integer](slice []T, cap Int) <-chan T {
 	var out chan T
@@ -1052,11 +1054,13 @@ func Nest[T any](s ...T) [][]T {
 
 // Break an iterable into len(iterable)-length steps of the given length, with each step's starting point one after its predecessor
 // example
-//	 >>> for i in walks(itertools.count(),2):print(''.join(i))
-//	 (0, 1)
-//	 (1, 2)
-//	 (2, 3)
-//	 # etc.
+//
+//	>>> for i in walks(itertools.count(),2):print(''.join(i))
+//	(0, 1)
+//	(1, 2)
+//	(2, 3)
+//	# etc.
+//
 // Inspired by the hyperoperation 16**2[5]2
 func Walks[T any, I rules.Integer](length I, slice []T) (out [][]T) {
 	tee := Tee(slice, length)
@@ -1363,7 +1367,7 @@ func Windows[T any](src []T, size int) (out [][]T) {
 }
 
 func Resize[T any](s []T, shape ...int) []T {
-	dim := Reduce(real.Mul[int], shape)
+	dim := Reduce(re.Mul[int], shape)
 	switch l := len(s); cmp(dim, l) {
 	case 1:
 		return s[:dim]
