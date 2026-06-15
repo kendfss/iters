@@ -2,10 +2,12 @@ github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/kendfss/but v1.1.0 h1:nuRUM125n5sZby7zMO5/9zohQ6eYZ5QMnlyRULKyXIw=
 github.com/kendfss/but v1.1.0/go.mod h1:8MR7DU2UecYlUQVZgeO5ERkYMJ0wkRNC1C0mOkILDhI=
-github.com/kendfss/oprs v1.3.0 h1:VQ/T5aFf0pPvlIWyZhKmD/9rcLhCwZFB6pa7XZpAy+Y=
-github.com/kendfss/oprs v1.3.0/go.mod h1:DWu3aAMzsQJtOWVi5+b4bfoL2T4xZeIJcdnX+PqhFhw=
+github.com/kendfss/oprs v1.3.2 h1:I6G6k3JWFZcyrjQsPPzhkGaMKugfJpdPUBTxEbI1on8=
+github.com/kendfss/oprs v1.3.2/go.mod h1:DWu3aAMzsQJtOWVi5+b4bfoL2T4xZeIJcdnX+PqhFhw=
 github.com/kendfss/oracle v0.1.0 h1:9D30HqKTbO1EW3GFa5GwalEKg+yJWZGC/iPLKjSxvOk=
 github.com/kendfss/oracle v0.1.0/go.mod h1:CCjARVLvePBEnwXgyqTOQ+LAzdUx0vNua8LqZi892yg=
+github.com/kendfss/oracle v0.1.1 h1:ZqnbIWx5QvqbtdGiVO82ccYqd48xa+jRBztMiKnZTS0=
+github.com/kendfss/oracle v0.1.1/go.mod h1:OBmDMIa12X4DOHykC7Phm0VGPy6laTaRJXUnDXWt4Ec=
 github.com/kendfss/rules v1.0.0 h1:YwNUQidnU67vgo09tgUP+Z/TPuYLQNxQutO+z5awwJA=
 github.com/kendfss/rules v1.0.0/go.mod h1:FMcRXdSCnJKWC/hBPlo44ZMtBHbuPt45huFd2F5yI/4=
 github.com/pmezard/go-difflib v1.0.0 h1:4DBwDE0NGyQoBHbLQYPwSUPoCMWR5BEzIk/f1lZbAQM=

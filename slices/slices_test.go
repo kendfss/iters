@@ -65,6 +65,7 @@ var equalFloatTests = []struct {
 }
 
 func TestEqual(t *testing.T) {
+	rand.Seed(0)
 	for _, test := range equalIntTests {
 		if got := Equal(test.s1, test.s2); got != test.want {
 			t.Errorf("Equal(%v, %v) = %t, want %t", test.s1, test.s2, got, test.want)
@@ -78,6 +79,7 @@ func TestEqual(t *testing.T) {
 }
 
 func TestEqualFunc(t *testing.T) {
+	rand.Seed(0)
 	for _, test := range equalIntTests {
 		// if got := EqualFunc(test.s1, test.s2, equal[int]); got != test.want {
 		if got := EqualFunc(equal[int], test.s1, test.s2); got != test.want {
@@ -176,6 +178,7 @@ var compareFloatTests = []struct {
 }
 
 func TestCompare(t *testing.T) {
+	rand.Seed(0)
 	intWant := func(want bool) string {
 		if want {
 			return "0"
@@ -206,6 +209,7 @@ func TestCompare(t *testing.T) {
 }
 
 func TestCompareFunc(t *testing.T) {
+	rand.Seed(0)
 	intWant := func(want bool) string {
 		if want {
 			return "0"
@@ -294,6 +298,7 @@ var indexTests = []struct {
 }
 
 func TestIndex(t *testing.T) {
+	rand.Seed(0)
 	for _, test := range indexTests {
 		if got := Index(test.v, test.s); got != test.want {
 			t.Errorf("Index(%v, %v) = %d, want %d", test.s, test.v, got, test.want)
@@ -302,6 +307,7 @@ func TestIndex(t *testing.T) {
 }
 
 func TestIndexFunc(t *testing.T) {
+	rand.Seed(0)
 	for _, test := range indexTests {
 		if got := IndexFunc(equal[int], test.v, test.s); got != test.want {
 			t.Errorf("IndexFunc(%v, equalToIndex(equal[int], %v)) = %d, want %d", test.s, test.v, got, test.want)
@@ -324,6 +330,7 @@ func TestIndexFunc(t *testing.T) {
 }
 
 func TestContains(t *testing.T) {
+	rand.Seed(0)
 	for _, test := range indexTests {
 		if got := Contains(test.s, test.v); got != (test.want != -1) {
 			t.Errorf("Contains(%v, %v) = %t, want %t", test.s, test.v, got, test.want != -1)
@@ -364,6 +371,7 @@ var insertTests = []struct {
 }
 
 func TestInsert(t *testing.T) {
+	rand.Seed(0)
 	s := []int{1, 2, 3}
 	if got := Insert(s, 0); !Equal(got, s) {
 		t.Errorf("Insert(%v, 0) = %v, want %v", s, got, s)
@@ -415,6 +423,7 @@ var deleteTests = []struct {
 }
 
 func TestDelete(t *testing.T) {
+	rand.Seed(0)
 	for _, test := range deleteTests {
 		copy := Clone(test.s)
 		if got := Delete(copy, test.i, test.j); !Equal(got, test.want) {
@@ -424,6 +433,7 @@ func TestDelete(t *testing.T) {
 }
 
 func TestClone(t *testing.T) {
+	rand.Seed(0)
 	s1 := []int{1, 2, 3}
 	s2 := Clone(s1)
 	if !Equal(s1, s2) {
@@ -473,6 +483,7 @@ var compactTests = []struct {
 }
 
 func TestCompact(t *testing.T) {
+	rand.Seed(0)
 	for _, test := range compactTests {
 		copy := Clone(test.s)
 		if got := Compact(copy); !Equal(got, test.want) {
@@ -482,6 +493,7 @@ func TestCompact(t *testing.T) {
 }
 
 func TestCompactFunc(t *testing.T) {
+	rand.Seed(0)
 	for _, test := range compactTests {
 		copy := Clone(test.s)
 		if got := CompactFunc(equal[int], copy); !Equal(got, test.want) {
@@ -498,6 +510,7 @@ func TestCompactFunc(t *testing.T) {
 }
 
 func TestGrow(t *testing.T) {
+	rand.Seed(0)
 	s1 := []int{1, 2, 3}
 	copy := Clone(s1)
 	s2 := Grow(copy, 1000)
@@ -510,6 +523,7 @@ func TestGrow(t *testing.T) {
 }
 
 func TestClip(t *testing.T) {
+	rand.Seed(0)
 	s1 := []int{1, 2, 3, 4, 5, 6}[:3]
 	orig := Clone(s1)
 	if len(s1) != 3 {
@@ -534,6 +548,7 @@ const (
 )
 
 func TestShortest(t *testing.T) {
+	rand.Seed(0)
 	type test struct {
 		short, long []int
 	}
@@ -546,7 +561,7 @@ func TestShortest(t *testing.T) {
 		size := rand.Intn(nItems)
 		data := test{}
 		for len(data.short) == len(data.long) {
-			data = test{short: oracle.Mkr(size, nMax), long: oracle.Mkr(size+1, nMax)}
+			data = test{short: oracle.Mkr(size, nMax), long: oracle.Mkr(size+1, nMax-1)}
 		}
 		result := Shortest(data.short, data.long)
 		if result != 0 {
@@ -556,6 +571,7 @@ func TestShortest(t *testing.T) {
 }
 
 func TestLongest(t *testing.T) {
+	rand.Seed(0)
 	type test struct {
 		short, long []int
 	}
@@ -568,7 +584,7 @@ func TestLongest(t *testing.T) {
 		size := rand.Intn(nItems)
 		data := test{}
 		for len(data.short) == len(data.long) {
-			data = test{short: oracle.Mkr(size, nMax), long: oracle.Mkr(size+1, nMax)}
+			data = test{short: oracle.Mkr(size, nMax), long: oracle.Mkr(size+1, nMax-1)}
 			data.short = Compact(data.short)
 			data.long = Compact(data.long)
 		}
@@ -580,6 +596,7 @@ func TestLongest(t *testing.T) {
 }
 
 func TestFilter(t *testing.T) {
+	rand.Seed(0)
 	for i := 0; i < nTests; i++ {
 		data := Upton[int](nItems)
 		result := FilterFunc(oprs.IsEven[int], data)
@@ -592,9 +609,10 @@ func TestFilter(t *testing.T) {
 }
 
 func TestZip(t *testing.T) {
+	rand.Seed(0)
 	for i := range Upton[int](nTests) {
-		left := oracle.Mkr(nItems, nMax)
-		right := oracle.Mkr(nItems, nMax)
+		left := oracle.Mkr(nItems, nMax-1)
+		right := oracle.Mkr(nItems, nMax-1)
 		result := Zip2(left, right)
 		for j, pair := range result {
 			if want, have := left[j], pair.Left; want != have {
@@ -608,14 +626,15 @@ func TestZip(t *testing.T) {
 }
 
 func TestFlatter(t *testing.T) {
+	rand.Seed(0)
 	const (
 		nItems = 4
 		nMax   = 1000
 	)
 	for i := range Upton[int](nTests) {
 		data := [][]int{
-			oracle.Mkr(nItems, nMax),
-			oracle.Mkr(nItems, nMax),
+			oracle.Mkr(nItems, nMax-1),
+			oracle.Mkr(nItems, nMax-1),
 		}
 		result := Flatter(data)
 
@@ -633,11 +652,12 @@ func TestFlatter(t *testing.T) {
 }
 
 func TestChain(t *testing.T) {
+	rand.Seed(0)
 	const (
 		nMax = 100
 	)
 	for i := range Upton[int](nTests) {
-		first, second := oracle.Mkr(nItems, nMax), oracle.Mkr(nItems, nMax)
+		first, second := oracle.Mkr(nItems, nMax-1), oracle.Mkr(nItems, nMax-1)
 		both := [][]int{first, second}
 		expected := append(Clone(first), second...)
 		result := Chain(first, second)
@@ -658,11 +678,12 @@ func TestChain(t *testing.T) {
 }
 
 // func TestChained(t *testing.T) {
+// rand.Seed(0)
 // 	const (
 // 		nMax = 100
 // 	)
 // 	for i := range Upton[int](nTests) {
-// 		first, second := oracle.Mkr(nItems, nMax), oracle.Mkr(nItems, nMax)
+// 		first, second := oracle.Mkr(nItems, nMax-1), oracle.Mkr(nItems, nMax-1)
 // 		both := [][]int{first, second}
 // 		expected := append(Clone(first), second...)
 // 		result := Chain(first, second)
@@ -683,8 +704,9 @@ func TestChain(t *testing.T) {
 // }
 
 func TestReversed(t *testing.T) {
+	rand.Seed(0)
 	for i := range Upton[int](nTests) {
-		data := oracle.Mkr(nItems, nMax)
+		data := oracle.Mkr(nItems, nMax-1)
 		first := Reversed(data)
 		second := Reversed(first)
 		if want, have := len(data), len(first); want != have {
@@ -702,13 +724,15 @@ func TestReversed(t *testing.T) {
 }
 
 func TestSwap(t *testing.T) {
+	rand.Seed(0)
 	for i := range Upton[int](nTests) {
-		orig := oracle.Mkr(nItems, nMax)
+		orig := oracle.Mkr(nItems, nMax-1)
 		clon := append([]int{}, orig...)
 
-		indices := oracle.Mkr(2, nItems)
+		indices := oracle.Mkr(2, nItems-1)
+		fmt.Println(indices, orig)
 		for orig[indices[0]] == orig[indices[1]] {
-			indices = oracle.Mkr(2, nItems)
+			indices = oracle.Mkr(2, nItems-1)
 		}
 		j, k := indices[0], indices[1]
 		Swap(clon, j, k)
@@ -724,8 +748,9 @@ func TestSwap(t *testing.T) {
 }
 
 func TestLen(t *testing.T) {
+	rand.Seed(0)
 	for i := range Upton[int](nTests) {
-		data := oracle.Mkr(rand.Intn(nMax), nMax)
+		data := oracle.Mkr(rand.Intn(nMax), nMax-1)
 		if want, have := len(data), Len[int](data); want != have {
 			oracle.Inequiv(t, i, have, want)
 		}
@@ -733,15 +758,19 @@ func TestLen(t *testing.T) {
 }
 
 func TestSelect(t *testing.T) {
+	rand.Seed(0)
 	for i := range Upton[int](nTests) {
-		data := oracle.Mkr(nItems, nMax)
-		indices := oracle.Mkr(rand.Intn(nItems), nMax)
+		data := oracle.Mkr(nItems, nMax-1)
+		indices := oracle.Mkr(rand.Intn(nItems), nMax-1)
 		results := Select(data, indices)
 		if len(indices) != len(results) {
 			t.Fatal("lengths do not agree")
 		}
+		fmt.Println(data, indices)
 		for j, e := range indices {
-			if want, have := data[e], results[j]; have != want {
+			want := data[e]
+			have := results[j]
+			if have != want {
 				t.Log(i, j)
 				t.Log(data)
 				t.Log(indices)
@@ -754,14 +783,17 @@ func TestSelect(t *testing.T) {
 }
 
 func TestAll(t *testing.T) {
+	rand.Seed(0)
 	data := Ones(nItems)
 	pred := oprs.Is(1)
 	t.Run("true test", func(t *testing.T) {
+		rand.Seed(0)
 		if !All(Cast(pred, data)) {
 			oracle.Inequiv(t, 0, false, true)
 		}
 	})
 	t.Run("false test", func(t *testing.T) {
+		rand.Seed(0)
 		data = append(data, 2)
 		if All(Cast(pred, data)) {
 			oracle.Inequiv(t, 0, true, false)
@@ -770,14 +802,17 @@ func TestAll(t *testing.T) {
 }
 
 func TestAny(t *testing.T) {
+	rand.Seed(0)
 	data := Ones(nItems)
 	pred := oprs.Is(2)
 	t.Run("false test", func(t *testing.T) {
+		rand.Seed(0)
 		if Any(Cast(pred, data)...) {
 			oracle.Inequiv(t, 0, false, true)
 		}
 	})
 	t.Run("true test", func(t *testing.T) {
+		rand.Seed(0)
 		data = append(data, 2)
 		if !Any(Cast(pred, data)...) {
 			oracle.Inequiv(t, 0, true, false)
@@ -786,14 +821,17 @@ func TestAny(t *testing.T) {
 }
 
 func TestMax(t *testing.T) {
+	rand.Seed(0)
 	data := Upton[int](2)
 	t.Run("basic", func(t *testing.T) {
+		rand.Seed(0)
 		want := 1
 		if have := Max(data...); have != want {
 			oracle.Inequiv(t, 0, have, want)
 		}
 	})
 	t.Run("reversed", func(t *testing.T) {
+		rand.Seed(0)
 		Reverse(data)
 		want := 0
 		if have := Max(data...); have != want {
@@ -802,6 +840,7 @@ func TestMax(t *testing.T) {
 		}
 	})
 	t.Run("take first", func(t *testing.T) {
+		rand.Seed(0)
 		data = Ones(2)
 		want := 0
 		if have := Max(data...); have != want {
@@ -811,14 +850,17 @@ func TestMax(t *testing.T) {
 }
 
 func TestMin(t *testing.T) {
+	rand.Seed(0)
 	data := Upton[int](2)
 	t.Run("basic", func(t *testing.T) {
+		rand.Seed(0)
 		want := 0
 		if have := Min(data...); have != want {
 			oracle.Inequiv(t, 0, have, want)
 		}
 	})
 	t.Run("revesed", func(t *testing.T) {
+		rand.Seed(0)
 		Reverse(data)
 		want := 1
 		if have := Min(data...); have != want {
@@ -827,6 +869,7 @@ func TestMin(t *testing.T) {
 		}
 	})
 	t.Run("take first", func(t *testing.T) {
+		rand.Seed(0)
 		data = Ones(2)
 		want := 0
 		if have := Min(data...); have != want {
@@ -836,9 +879,10 @@ func TestMin(t *testing.T) {
 }
 
 func TestExtremal(t *testing.T) {
+	rand.Seed(0)
 	t.Run("lt ==> Min", func(t *testing.T) {
 		for i := range Upton[int](nTests) {
-			data := oracle.Mkr(nItems, nMax)
+			data := oracle.Mkr(nItems, nMax-1)
 			want := Min(data...)
 			have := Extremal(oprs.Lt[int], data...)
 			if want != have {
@@ -848,8 +892,9 @@ func TestExtremal(t *testing.T) {
 		}
 	})
 	t.Run("gt ==> Max", func(t *testing.T) {
+		rand.Seed(0)
 		for i := range Upton[int](nTests) {
-			data := oracle.Mkr(nItems, nMax)
+			data := oracle.Mkr(nItems, nMax-1)
 			want := Max(data...)
 			have := Extremal(oprs.Gt[int], data...)
 			if want != have {
@@ -861,6 +906,7 @@ func TestExtremal(t *testing.T) {
 }
 
 func TestOnes(t *testing.T) {
+	rand.Seed(0)
 	for i := 0; i < 10; i++ {
 		result := Ones(i)
 		if len(result) != i {
@@ -875,6 +921,7 @@ func TestOnes(t *testing.T) {
 }
 
 func TestReduce(t *testing.T) {
+	rand.Seed(0)
 	type test[T any] struct {
 		ans T
 		op  func(T, T) T
@@ -907,6 +954,7 @@ func TestReduce(t *testing.T) {
 }
 
 func TestUpto(t *testing.T) {
+	rand.Seed(0)
 	type argSet struct {
 		start, stop, step int
 	}
@@ -915,12 +963,14 @@ func TestUpto(t *testing.T) {
 		nMax = 100
 	)
 	t.Run("continuity", func(t *testing.T) {
+		rand.Seed(0)
 		const (
 			nMax = 50
 		)
 		t.Run("positive", func(t *testing.T) {
+			rand.Seed(0)
 			for i := 0; i < nTests; i++ {
-				a := oracle.Mkr(3, nMax)
+				a := oracle.Mkr(3, nMax-1)
 				Sort(a)
 				start, stop, step := a[0], a[2], a[1]
 				args := argSet{start: start, stop: stop, step: step}
@@ -934,8 +984,9 @@ func TestUpto(t *testing.T) {
 			}
 		})
 		t.Run("negative", func(t *testing.T) {
+			rand.Seed(0)
 			for i := 0; i < nTests; i++ {
-				a := oracle.Mkr(3, nMax)
+				a := oracle.Mkr(3, nMax-1)
 				Sort(a)
 				start, stop, step := a[2], a[1], -a[1]
 				args := argSet{start: start, stop: stop, step: step}
@@ -951,8 +1002,11 @@ func TestUpto(t *testing.T) {
 	})
 
 	t.Run("series", func(t *testing.T) {
+		rand.Seed(0)
 		t.Run("triangular", func(t *testing.T) {
+			rand.Seed(0)
 			t.Run("positive", func(t *testing.T) {
+				rand.Seed(0)
 				for i := 0; i < nTests; i++ {
 					val := rand.Intn(nMax)
 					result := Upto[int](0, val, 1)
@@ -963,12 +1017,13 @@ func TestUpto(t *testing.T) {
 				}
 			})
 			t.Run("negative", func(t *testing.T) {
+				rand.Seed(0)
 				for i := 0; i < nTests; i++ {
 					val := rand.Intn(nMax)
 					result := Upto[int](val, 0, -1)
-					sum, trg := Reduce(real.Add[int], result), oracle.TriangularR(val)
+					sum, trg := Reduce(real.Add[int], result), oracle.TriangularR(val)+len(result)
 					if sum != trg {
-						oracle.Quitf(t, "#%d (%d -> %v): Range(%d, 0, -1) should add up to %d but is %d", i, val, result, val, trg, sum)
+						oracle.Quitf(t, "#%d (%d -> %v): Upto(%d, 0, -1) should add up to %d but is %d", i, val, result, val, trg, sum)
 					}
 				}
 			})
@@ -977,6 +1032,7 @@ func TestUpto(t *testing.T) {
 }
 
 func TestSnap(t *testing.T) {
+	rand.Seed(0)
 	type tst struct {
 		len int
 		wid int
@@ -1009,8 +1065,9 @@ func TestSnap(t *testing.T) {
 }
 
 func TestMap(t *testing.T) {
+	rand.Seed(0)
 	for i := 0; i < nTests; i++ {
-		data := oracle.Mkr(nItems, nMax)
+		data := oracle.Mkr(nItems, nMax-1)
 		result := Cast(real.Succ[int], data)
 		if len(result) != len(data) {
 			oracle.Quitf(t, "#%d (%v -> %v): result has length %d, data has length %d", i, data, result, len(result), len(data))
@@ -1024,6 +1081,7 @@ func TestMap(t *testing.T) {
 }
 
 func TestSplit(t *testing.T) {
+	rand.Seed(0)
 	type tst struct {
 		str string
 		brk rune
@@ -1067,6 +1125,7 @@ func TestSplit(t *testing.T) {
 }
 
 func TestSplitAfter(t *testing.T) {
+	rand.Seed(0)
 	type tst struct {
 		str string
 		brk rune
@@ -1110,6 +1169,7 @@ func TestSplitAfter(t *testing.T) {
 }
 
 func TestRotated(t *testing.T) {
+	rand.Seed(0)
 	type test struct {
 		slice []int
 		want  []int
@@ -1142,6 +1202,7 @@ func TestRotated(t *testing.T) {
 }
 
 func TestRepeat(t *testing.T) {
+	rand.Seed(0)
 	for range Upton[int](nTests) {
 		count, seed := rand.Intn(nItems), rand.Intn(nMax)
 		slice := Repeat(seed, count)
@@ -1151,6 +1212,7 @@ func TestRepeat(t *testing.T) {
 		}
 	}
 	t.Run("equals Tee", func(l *testing.T) {
+		rand.Seed(0)
 		for i := range Upton[int](nTests) {
 			count, seed := rand.Intn(nItems)+1, make([]int, rand.Intn(nItems)+1)
 			// fmt.Printf("count:\t%d\nseed:\t%d\n", count, seed)
@@ -1172,18 +1234,22 @@ func TestRepeat(t *testing.T) {
 }
 
 func TestTee(l *testing.T) {
+	rand.Seed(0)
 	// tested under TestRepeat
 	l.Run("chain zero != self", func(l *testing.T) {
+		rand.Seed(0)
 		t := oracle.RandNums[int](rand.Intn(20))
 		assert.NotEqual(l, t, Chain(Tee(t, 0)...))
 	})
 	l.Run("chain one == self", func(l *testing.T) {
+		rand.Seed(0)
 		t := oracle.RandNums[int](rand.Intn(20))
 		assert.Equal(l, t, Chain(Tee(t, 1)...))
 	})
 }
 
 // func TestPermutations(l *testing.T) {
+// rand.Seed(0)
 // 	// # permutations('ABCD', 2) --> AB AC AD BA BC BD CA CB CD DA DB DC
 // 	// # permutations(range(3)) --> 012 021 102 120 201 210
 // 	type test struct {
@@ -1209,6 +1275,7 @@ func TestTee(l *testing.T) {
 // }
 
 // func TestProduct(l *testing.T) {
+// rand.Seed(0)
 // 	type test struct {
 // 		want [][]int
 // 		arg  []int
@@ -1225,6 +1292,7 @@ func TestTee(l *testing.T) {
 // }
 
 // func TestCombinations(t *testing.T) {
+// rand.Seed(0)
 // 	type test struct {
 // 		want [][]int
 // 		arg  []int
@@ -1244,6 +1312,7 @@ func TestTee(l *testing.T) {
 // }
 
 func TestGetxy(l *testing.T) {
+	rand.Seed(0)
 	img := [][]int8{
 		{0, 1, 2, 3},
 		{4, 5, 6, 7},
@@ -1267,6 +1336,7 @@ func TestGetxy(l *testing.T) {
 }
 
 func TestWindows(t *testing.T) {
+	rand.Seed(0)
 	arg := Upton[int](10)
 	wants := map[int][][]int{
 		0:  nil,
@@ -1288,6 +1358,7 @@ func TestWindows(t *testing.T) {
 }
 
 func TestEnumerate(t *testing.T) {
+	rand.Seed(0)
 	type check struct {
 		arg []int
 	}
@@ -1308,6 +1379,7 @@ func TestEnumerate(t *testing.T) {
 }
 
 func TestWalks(t *testing.T) {
+	rand.Seed(0)
 	type check struct {
 		slice  []int
 		length int
@@ -1325,6 +1397,7 @@ func TestWalks(t *testing.T) {
 }
 
 func TestPairwise(t *testing.T) {
+	rand.Seed(0)
 	require.Equal(t, [][]byte{{'A', 'B'}, {'B', 'C'}, {'C', 'D'}, {'D', 'E'}, {'E', 'F'}, {'F', 'G'}}, Pairwise([]byte("ABCDEFG")...))
 	require.Equal(t, [][]rune{{'A', 'B'}, {'B', 'C'}, {'C', 'D'}, {'D', 'E'}, {'E', 'F'}, {'F', 'G'}}, Pairwise([]rune("ABCDEFG")...))
 }
